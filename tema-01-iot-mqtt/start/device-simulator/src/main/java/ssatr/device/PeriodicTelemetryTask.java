@@ -1,6 +1,8 @@
 package ssatr.device;
 
 import java.util.concurrent.BlockingQueue;
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 /**
  * TASK PERIODIC, cu perioada T = periodMs: fiecare job citește senzorul și
@@ -47,6 +49,48 @@ public class PeriodicTelemetryTask implements Runnable {
         //
         // periodMs se poate schimba în timpul rulării (comanda SET_INTERVAL),
         // deci citiți-l la fiecare job.
+
+        long nextRelease = System.nanoTime();
+
+        while (!Thread.currentThread().isInterrupted())
+        {
+            
+            long now = System.nanoTime();
+            long waitNanos = nextRelease - now;
+            
+            if (waitNanos > 0) {
+            try {
+                TimeUnit.NANOSECONDS.sleep(waitNanos);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+                }
+            }
+            double.temperature = sensor.read();
+
+            long tempstamp = System.currentRimeMillis();
+
+            String message = String.format(
+                Locale.US,
+                "%s;%d;%.2f",
+                deviceId,
+                timestamp,
+                temperature
+                );
+        
+            mqtt.publish(
+                Config.telemetryTopic(deviceID),
+                message
+            );
+
+            if (temperature > treshold){
+                alarm.Evemts.offer(temperature);
+            }
+
+            long currentPeriodMS = periodMS;
+        
+            nextRelease += TimeUnit.MILLISECONDS.toNanos(currentPeriodMs);
+        }
     }
 
     public void setPeriodMs(long periodMs) {
