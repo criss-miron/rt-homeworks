@@ -54,7 +54,7 @@ public void run() {
                         long period = Long.parseLong(parts[1]);
 
                         if (period <= 0) {
-                            throw new IllegalArgumentException("intervalul trebuie sa fie pozitiv");
+                            throw new IllegalArgumentException("interval invalid");
                         }
 
                         periodic.setPeriodMs(period);
@@ -77,26 +77,19 @@ public void run() {
                         break;
 
                     case "RESET":
-                        if (parts.length != 1) {
-                            throw new IllegalArgumentException("comanda RESET nu accepta parametri");
-                        }
-
                         sensor.reset();
                         result = "OK RESET";
                         break;
 
                     case "STATUS":
-                        if (parts.length != 1) {
-                            throw new IllegalArgumentException("comanda STATUS nu accepta parametri");
-                        }
-
                         result = "OK STATUS";
                         break;
 
                     default:
-                        throw new IllegalArgumentException("comanda necunoscuta: " + parts[0]);
+                        result = "ERROR comanda necunoscuta";
+                        break;
                 }
-            } catch (IllegalArgumentException | NumberFormatException e) {
+            } catch (IllegalArgumentException e) {
                 result = "ERROR " + e.getMessage();
             }
 
@@ -105,6 +98,7 @@ public void run() {
                     + result;
 
             mqtt.publish(Config.statusTopic(deviceId), message);
+
             System.out.println("[aperiodic] " + message);
         }
     } catch (InterruptedException e) {
