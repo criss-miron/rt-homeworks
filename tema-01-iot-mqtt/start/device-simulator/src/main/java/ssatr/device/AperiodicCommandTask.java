@@ -35,16 +35,80 @@ public class AperiodicCommandTask implements Runnable {
         this.periodic = periodic;
     }
 
-    @Override
-    public void run() {
-        // TODO 3: implementați taskul aperiodic:
-        //   - preluați comenzile din coadă: commands.take()
-        //   - separați numele comenzii de parametru: command.split(" ")
-        //   - executați comanda (periodic.setPeriodMs(...), sensor.reset() etc.)
-        //   - publicați confirmarea pe Config.statusTopic(deviceId)
-        //   - o comandă necunoscută sau un parametru invalid nu trebuie să
-        //     oprească taskul: publicați "ERROR <motiv>"
-        //
-        // Vezi exemplul exemple/01-taskuri/.../AperiodicTaskExample.java
+@Override
+public void run() {
+    try {
+        while (true) {
+            String command = commands.take();
+            String[] parts = command.trim().split("\\s+");
+
+            String result;
+
+            try {
+                switch (parts[0]) {
+                    case "SET_INTERVAL":
+                        if (parts.length != 2) {
+                            throw new IllegalArgumentException("parametru invalid");
+                        }
+
+                        long period = Long.parseLong(parts[1]);
+
+                        if (period <= 0) {
+                            throw new IllegalArgumentException("intervalul trebuie sa fie pozitiv");
+                        }
+
+                        periodic.setPeriodMs(period);
+                        result = "OK SET_INTERVAL " + period;
+                        break;
+
+                    case "SET_THRESHOLD":
+                        if (parts.length != 2) {
+                            throw new IllegalArgumentException("parametru invalid");
+                        }
+
+                        double threshold = Double.parseDouble(parts[1]);
+
+                        if (!Double.isFinite(threshold)) {
+                            throw new IllegalArgumentException("prag invalid");
+                        }
+
+                        periodic.setThreshold(threshold);
+                        result = "OK SET_THRESHOLD " + threshold;
+                        break;
+
+                    case "RESET":
+                        if (parts.length != 1) {
+                            throw new IllegalArgumentException("comanda RESET nu accepta parametri");
+                        }
+
+                        sensor.reset();
+                        result = "OK RESET";
+                        break;
+
+                    case "STATUS":
+                        if (parts.length != 1) {
+                            throw new IllegalArgumentException("comanda STATUS nu accepta parametri");
+                        }
+
+                        result = "OK STATUS";
+                        break;
+
+                    default:
+                        throw new IllegalArgumentException("comanda necunoscuta: " + parts[0]);
+                }
+            } catch (IllegalArgumentException | NumberFormatException e) {
+                result = "ERROR " + e.getMessage();
+            }
+
+            String message = deviceId + ";"
+                    + System.currentTimeMillis() + ";"
+                    + result;
+
+            mqtt.publish(Config.statusTopic(deviceId), message);
+            System.out.println("[aperiodic] " + message);
+        }
+    } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
     }
+}
 }
