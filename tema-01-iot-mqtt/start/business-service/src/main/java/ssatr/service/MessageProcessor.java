@@ -26,13 +26,75 @@ public class MessageProcessor implements Runnable {
     }
 
     @Override
-    public void run() {
-        // TODO 4: într-o buclă:
-        //   - preluați un mesaj: inbox.take()
-        //   - salvați mesajul în fișierul CSV: storage.append(kind, mesaj)
-        //     (CsvStorage este gata implementată)
-        //   - actualizați dashboard-ul, în funcție de kind
-        //   - alarmele și confirmările se afișează imediat în consolă
-        //   - un mesaj greșit (format invalid) nu trebuie să oprească thread-ul
+public void run() {
+    try {
+        while (true) {
+            String message = inbox.take();
+
+            try {
+                String[] parts = message.split(";", -1);
+
+                // Verifica formatul mesajului
+                int expectedFields;
+
+                switch (kind) {
+                    case "telemetry":
+                        expectedFields = 3;
+                        break;
+                    case "alarm":
+                    case "status":
+                        expectedFields = 4;
+                        break;
+                    default:
+                        System.out.println("Tip de mesaj necunoscut: " + kind);
+                        continue;
+                }
+
+                if (parts.length != expectedFields
+                        || parts[0].isEmpty()
+                        || parts[1].isEmpty()) {
+                    System.out.println("Mesaj invalid: " + message);
+                    continue;
+                }
+
+                // Salveaza mesajul in CSV
+                storage.append(kind, message);
+
+                // Actualizeaza dashboard-ul
+                switch (kind) {
+                    case "telemetry":
+                        dashboard.updateTelemetry(
+                            parts[0],
+                            Double.parseDouble(parts[2])
+                        );
+                        break;
+
+                    case "alarm":
+                        System.out.println("[ALARM] " + message);
+
+                        dashboard.updateAlarm(
+                            parts[0],
+                            Double.parseDouble(parts[2]),
+                            Double.parseDouble(parts[3])
+                        );
+                        break;
+
+                    case "status":
+                        System.out.println("[STATUS] " + message);
+
+                        dashboard.updateStatus(
+                            parts[0],
+                            parts[2] + ";" + parts[3]
+                        );
+                        break;
+                }
+
+            } catch (IllegalArgumentException e) {
+                System.out.println("Mesaj invalid: " + message);
+            }
+        }
+    } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
     }
+}
 }
