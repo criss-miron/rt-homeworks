@@ -42,8 +42,10 @@ public void run() {
                         expectedFields = 3;
                         break;
                     case "alarm":
-                    case "status":
                         expectedFields = 4;
+                        break;
+                    case "status":
+                        expectedFields = 3;
                         break;
                     default:
                         System.out.println("Tip de mesaj necunoscut: " + kind);
