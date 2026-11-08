@@ -46,6 +46,32 @@ float read_temperature(void) {
 //   Perioada și pragul se schimbă prin comenzi (taskul aperiodic), deci sunt
 //   variabile globale volatile, citite la fiecare job.
 
+
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/queue.h>
+
+// Parametrii curenți ai dispozitivului
+volatile uint32_t period_ms = PERIOD_MS_INITIAL;
+volatile float threshold = THRESHOLD_INITIAL;
+
+// Un eveniment de alarmă
+struct AlarmEvent {
+    float temperature;
+    float threshold;
+};
+
+// O comandă primită prin MQTT
+struct CommandMessage {
+    char text[COMMAND_MAX_LEN];
+};
+
+// Cozile prin care comunică task-urile
+QueueHandle_t alarm_queue = nullptr;
+QueueHandle_t command_queue = nullptr;
+
+
+
 // TODO 2: TASK SPORADIC, tratează alarmele de temperatură.
 //   - așteaptă un eveniment din coada de alarme
 //   - dacă de la ultima alarmă publicată au trecut mai puțin de
