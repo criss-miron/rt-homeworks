@@ -125,6 +125,20 @@ void setup() {
     //   ca primele mesaje publicate să nu se piardă. Alegeți prioritățile
     //   între 2 și 19: peste loopTask (1), sub taskurile sistemului pentru
     //   evenimente și Wi-Fi (20, 23). Stiva, în octeți: cel puțin 4096.
+
+    
+    alarm_queue = xQueueCreate(10, sizeof(AlarmEvent));
+    command_queue = xQueueCreate(10, sizeof(CommandMessage));
+
+    if (alarm_queue == nullptr || command_queue == nullptr) {
+        Serial.println("Eroare: nu s-au putut crea cozile!");
+        while (true) {
+            delay(1000);
+        }
+    }
+
+    Serial.println("Cozile FreeRTOS au fost create.");
+
 }
 
 void loop() {
